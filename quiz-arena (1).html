@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QuizArena</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root{--pg:#050b1a;--card:#0b1426;--ink:#f1f5ff;--mute:#8da2c7;--line:#1f2f52;--acc:#2f6bff;--acc-d:#1f55e0;--acc-t:#14295a;--good:#34d399;--good-t:#0f2b24;--bad:#f87171;--bad-t:#3a1a1e;color-scheme:dark;box-sizing:border-box}
+.bubbles{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.bubbles span{position:absolute;bottom:-60px;font-weight:600;color:rgba(96,150,255,.3);white-space:nowrap;text-shadow:0 0 14px rgba(47,107,255,.4);animation:rise linear infinite}
+@keyframes rise{0%{transform:translate(0,0) rotate(-6deg);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translate(40px,-118vh) rotate(6deg);opacity:0}}
+.credit{position:absolute;right:10px;top:calc(24px + env(safe-area-inset-top,0px));z-index:2;font-size:.92rem;font-weight:700;line-height:1.2;color:#dbe6ff;text-align:right;letter-spacing:.02em}
+.credit b{display:block;position:relative;font-size:.92rem;font-weight:700;color:#eaf6ff;text-shadow:0 0 3px #fff,0 0 9px #38bdf8,0 0 18px #2f6bff,0 0 32px #2f6bff;animation:neon 2.6s ease-in-out infinite}
+.credit b::before,.credit b::after{position:absolute;color:#bfe3ff;text-shadow:0 0 6px #38bdf8,0 0 12px #2f6bff;animation:twinkle 1.8s ease-in-out infinite;pointer-events:none}
+.credit b::before{content:"✦";left:-13px;top:-7px;font-size:.8rem}
+.credit b::after{content:"✧";right:4px;top:-12px;font-size:.9rem;animation-delay:.9s}
+@keyframes neon{0%,100%{text-shadow:0 0 3px #fff,0 0 9px #38bdf8,0 0 18px #2f6bff,0 0 32px #2f6bff}50%{text-shadow:0 0 2px #fff,0 0 5px #38bdf8,0 0 10px #2f6bff,0 0 16px #2f6bff}}
+@keyframes twinkle{0%,100%{opacity:.15;transform:scale(.6) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(25deg)}}
+select option{background:#0b1426;color:#f1f5ff}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0%,#0d2457 0,var(--pg) 55%) fixed;color:var(--ink);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:400;font-size:15px;line-height:1.5;padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(60px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center}
+.wrap{width:100%;max-width:540px;position:relative;z-index:1}
+header{padding:4px 2px 6px}
+h1{margin:0;font-size:1.6rem;font-weight:700;letter-spacing:-.02em;color:#fff}
+h1 span{color:#5b8cff}
+.tag{margin:2px 0 0;color:#c9d6f2;font-size:.9rem;letter-spacing:.04em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-top:16px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 6px 20px rgba(15,23,42,.05)}
+h2{font-size:1.15rem;font-weight:600;margin:0 0 6px;line-height:1.35;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:6px 0 10px;font-size:.88rem}
+.lbl{display:block;font-size:.8rem;font-weight:600;color:var(--mute);margin:14px 0 2px}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin:6px 0}
+select option{color:#f1f5ff;background:#0b1426}
+input::placeholder{color:var(--mute)}
+input:focus,select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-t)}
+input[type=radio]{width:20px;height:20px;margin:0;accent-color:var(--acc);flex:none}
+.btn{display:block;width:100%;font:inherit;font-weight:600;border:1px solid var(--acc);cursor:pointer;color:#fff;background:var(--acc);border-radius:10px;padding:11px 14px;margin-top:10px;text-align:center;text-decoration:none;transition:background .15s,border-color .15s}
+.btn:hover:not(:disabled){background:var(--acc-d);border-color:var(--acc-d)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover:not(:disabled){background:var(--pg);border-color:var(--mute)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.ans:focus-visible,.avs button:focus-visible,.sh a:focus-visible,.sh button:focus-visible{outline:3px solid var(--acc-t);outline-offset:1px;box-shadow:0 0 0 2px var(--acc)}
+[hidden]{display:none!important}.hide{display:none}
+.cr{display:flex;gap:10px;align-items:center}
+.divider{height:1px;background:var(--line);margin:18px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chips span{background:var(--pg);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.82rem}
+.chips b{cursor:pointer;color:var(--bad);margin-left:6px;font-weight:600}
+.hud{display:flex;justify-content:space-between;align-items:center;color:var(--mute);font-size:.88rem;gap:8px}
+.hud #pn{font-weight:600;color:var(--ink)}
+.sc{font-size:1.05rem;color:var(--acc);font-weight:700;font-variant-numeric:tabular-nums}
+.tb{height:6px;border-radius:6px;background:var(--line);margin:12px 0 18px;overflow:hidden}
+.tb i{display:block;height:100%;width:100%;background:var(--acc);border-radius:6px}
+.q{font-size:1.2rem;font-weight:600;margin:4px 0 16px;line-height:1.4;letter-spacing:-.01em}
+.ans{display:flex;align-items:center;gap:12px;width:100%;font:inherit;font-weight:500;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.ans:hover:not(:disabled){border-color:var(--acc);background:var(--acc-t)}
+.ans i{font-style:normal;font-weight:600;font-size:.82rem;color:var(--mute);background:var(--pg);border:1px solid var(--line);border-radius:7px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.ans:disabled{cursor:default}
+.ans.dim{opacity:.5}
+.ans.ok{border-color:var(--acc);background:var(--acc);color:#fff}
+.ans.ok i{background:#fff;border-color:#fff;color:var(--acc)}
+.ans.no{border-color:#3a4a6b;background:#101a30;color:var(--mute);text-decoration:line-through}
+.ans.no i{background:#3a4a6b;border-color:#3a4a6b;color:#fff}
+.fb{min-height:26px;font-weight:600;font-size:.95rem;margin-top:4px}
+.avs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
+.avs button{font-size:26px;background:var(--pg);border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer}
+.avs button.on{border-color:var(--acc);background:var(--acc-t);box-shadow:0 0 0 2px var(--acc)}
+.big{width:64px;height:64px;border-radius:50%;background:var(--pg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto 10px}
+.score{font-size:2.6rem;font-weight:700;text-align:center;line-height:1.1;color:var(--acc);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.center{text-align:center}
+.sh{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.sh a,.sh button{flex:1 1 30%;font:inherit;font-weight:500;font-size:.88rem;color:var(--ink);background:var(--card);text-decoration:none;text-align:center;border:1px solid var(--line);border-radius:10px;padding:9px 6px;cursor:pointer}
+.sh a:hover,.sh button:hover{background:var(--pg);border-color:var(--mute)}
+.sh button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.sh button.pri:hover{background:var(--acc-d)}
+.lnk{font-size:.8rem;color:var(--mute)}
+#code{text-align:center;font-size:1rem;letter-spacing:1px}
+#jc{letter-spacing:6px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 16px}
+.stats div{background:var(--pg);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center}
+.stats b{display:block;font-size:1.25rem;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.stats span{font-size:.72rem;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:6px 0 18px}
+.pod{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.pod>span{font-size:.72rem;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+.pod em{font-style:normal;font-size:.82rem;font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.step{width:100%;border-radius:8px 8px 0 0;background:var(--acc);color:#fff;font-weight:600;display:flex;justify-content:center;padding-top:6px;font-size:.85rem;font-variant-numeric:tabular-nums}
+.av{width:36px;height:36px;border-radius:50%;background:var(--pg);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:20px;flex:none}
+.row{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--card)}
+.rk{width:22px;text-align:center;color:var(--mute);font-weight:600;font-size:.88rem}
+.nm{flex:1;min-width:0}
+.nm b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nm small{font-weight:400;color:var(--mute);font-size:.78rem;margin-left:4px}
+.mb{display:block;height:5px;border-radius:5px;background:var(--line);margin-top:5px;overflow:hidden}
+.mb i{display:block;height:100%;background:var(--acc)}
+.row .p{color:var(--ink);font-weight:600;font-size:.88rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+#mini{margin-top:12px}#mini h2{font-size:.95rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.bubbles span,.credit b,.credit b::before,.credit b::after{animation:none}}
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles" aria-hidden="true"></div>
+<div class="credit">Crafted by<b>Dheenusri A, Amirtha GR</b></div>
+<div class="wrap">
+ <header>
+  <h1>Quiz<span>Arena</span></h1>
+  <p class="tag">Your Mind · Your Move · Your Victory</p>
+ </header>
+
+ <div class="card" id="home">
+  <h2>Welcome to QuizArena</h2>
+  <p class="sub">Players: enter your quiz code or paste the quiz link you received.</p>
+  <label class="lbl" for="code">Quiz link or code</label>
+  <input id="code" placeholder="Enter join code or paste quiz link" aria-label="Quiz link or code">
+  <button class="btn" id="hjn">Join a quiz</button>
+  <div class="divider"></div>
+  <button class="btn ghost" id="hadm">Admin login</button>
+ </div>
+
+ <div class="card hide" id="lg">
+  <h2>Admin login</h2>
+  <p class="sub">Only the admin can create quizzes and view the leaderboard.</p>
+  <label class="lbl" for="lgp">Password</label>
+  <input id="lgp" type="password" placeholder="Enter admin password" autocomplete="current-password">
+  <p class="sub" id="lgm" style="color:var(--bad)"></p>
+  <button class="btn" id="lgo">Login</button>
+  <button class="btn ghost" id="lgb">Back</button>
+ </div>
+
+ <div class="card hide" id="ad">
+  <h2>Admin dashboard</h2>
+  <p class="sub">Create quizzes, share the link with players and track the leaderboard.</p>
+  <button class="btn" id="hmk">Create a quiz</button>
+  <button class="btn ghost" id="hdb">Leaderboard</button>
+  <button class="btn ghost" id="lo">Logout</button>
+ </div>
+
+ <div class="card hide" id="mk">
+  <h2>Create your quiz</h2>
+  <label class="lbl" for="mt">Quiz title</label>
+  <input id="mt" placeholder="Example: General Knowledge" maxlength="40">
+  <label class="lbl" for="mh">WhatsApp number (optional)</label>
+  <input id="mh" inputmode="tel" placeholder="Country code and number" maxlength="15">
+  <label class="lbl" for="mtm">Time per question</label>
+  <select id="mtm"><option value="10">10 seconds</option><option value="20" selected>20 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="90">1 minute 30 seconds</option><option value="120">2 minutes</option></select>
+  <div class="divider"></div>
+  <label class="lbl" for="mq">Question</label>
+  <input id="mq" placeholder="Type a question" maxlength="120">
+  <div id="mo"></div>
+  <p class="sub">Add 2 to 4 options and select the circle next to the correct answer.</p>
+  <p class="sub" id="mm" style="color:var(--bad)"></p>
+  <button class="btn ghost" id="madd">Add this question</button>
+  <div class="chips" id="mls"></div>
+  <button class="btn" id="mpub" disabled>Publish quiz</button>
+  <button class="btn ghost" id="mbk">Back</button>
+ </div>
+
+ <div class="card hide" id="sh">
+  <h2 class="center">Your quiz is live</h2>
+  <p class="sub center">Share it with your players:</p>
+  <div id="jcw" hidden><p class="sub center">Join code</p><div class="score" id="jc"></div></div>
+  <div class="sh" id="shr"></div>
+  <label class="lbl" for="lnk">Quiz link</label>
+  <input id="lnk" class="lnk" readonly>
+  <p class="sub">Link not opening? Players can paste this code on the home page:</p>
+  <input id="cd" class="lnk" readonly aria-label="Quiz code">
+  <button class="btn" id="gd">Open leaderboard</button>
+  <button class="btn ghost" id="sbk">Back to dashboard</button>
+ </div>
+
+ <div class="card hide" id="jn">
+  <div class="big" id="jav">😎</div>
+  <h2 class="center" id="jt"></h2>
+  <p class="sub center" id="js"></p>
+  <label class="lbl" for="jname">Name</label>
+  <input id="jname" placeholder="Your name" maxlength="24">
+  <label class="lbl" for="jg">Department</label>
+  <select id="jg"><option value="">Select department</option><option>ECE</option><option>EEE</option><option>AIML</option><option>AIDS</option><option>IT</option><option>MECH</option><option>CSE</option><option>CSE(CS)</option></select>
+  <label class="lbl" for="jy">Year</label>
+  <select id="jy"><option value="">Select year</option><option>I YEAR</option><option>II YEAR</option><option>III YEAR</option></select>
+  <label class="lbl">Avatar</label>
+  <div class="avs" id="avs"></div>
+  <div id="lb1"></div>
+  <button class="btn" id="jgo">Start game</button>
+ </div>
+
+ <div class="card hide" id="pl">
+  <div class="hud"><span id="pn"></span><span id="pst"></span><span class="sc" id="psc">0</span></div>
+  <div class="tb"><i id="tbar"></i></div>
+  <div class="q" id="qt"></div>
+  <div id="ans"></div>
+  <div class="fb" id="fb" aria-live="polite"></div>
+  <div id="mini"></div>
+  <button class="btn" id="nx" hidden>Next</button>
+ </div>
+
+ <div class="card hide" id="rs">
+  <div class="big" id="rm"></div>
+  <div class="score" id="rsc"></div>
+  <h2 class="center" id="rv" style="margin-top:6px"></h2>
+  <p class="sub center" id="rt"></p>
+  <div id="lb2"></div>
+  <a class="btn" id="sendres" target="_blank" rel="noopener">Send my score to the host</a>
+  <div class="sh" id="shr2"></div>
+  <button class="btn ghost" id="again">Back</button>
+ </div>
+
+ <div class="card hide" id="db">
+  <h2>Leaderboard</h2>
+  <div id="list"></div>
+  <button class="btn" id="rf">Refresh</button>
+  <button class="btn ghost" id="bk">Back</button>
+ </div>
+</div>
+<script>
+// Optional online leaderboard (Firebase Firestore). Paste your project id and web API key to turn it on.
+const FB={project:"",key:""};
+const online=()=>!!(FB.project&&FB.key);
+// Admin password. Change it before you publish.
+const ADMIN_PASS="admin123";
+let adm=false,pendingR=null;
+try{adm=sessionStorage.getItem("aq_adm")==="1"}catch(e){}
+const FS=()=>"https://firestore.googleapis.com/v1/projects/"+FB.project+"/databases/(default)/documents";
+const J={"Content-Type":"application/json"};
+async function saveResult(r){await fetch(FS()+"/arena/"+r.id+"?key="+FB.key,{method:"PATCH",headers:J,body:JSON.stringify({fields:{q:{stringValue:r.q},n:{stringValue:r.n},d:{stringValue:r.d||""},y:{stringValue:r.y||""},v:{stringValue:r.v},s:{integerValue:String(r.s)},c:{integerValue:String(r.c)},t:{integerValue:String(r.t)}}})})}
+async function createGame(code,m){await fetch(FS()+"/games?documentId="+code+"&key="+FB.key,{method:"POST",headers:J,body:JSON.stringify({fields:{d:{stringValue:JSON.stringify(m)}}})})}
+async function getGame(c){const x=await fetch(FS()+"/games/"+c+"?key="+FB.key);if(!x.ok)return null;return JSON.parse((await x.json()).fields.d.stringValue)}
+const gc=()=>Array.from({length:6},()=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join("");
+async function loadResults(q){
+ const res=await fetch(FS()+":runQuery?key="+FB.key,{method:"POST",headers:J,body:JSON.stringify({structuredQuery:{from:[{collectionId:"arena"}],where:{fieldFilter:{field:{fieldPath:"q"},op:"EQUAL",value:{stringValue:q}}},limit:200}})});
+ return (await res.json()).filter(x=>x.document).map(x=>{const f=x.document.fields;return{q:q,n:f.n.stringValue,d:f.d?f.d.stringValue:"",y:f.y?f.y.stringValue:"",v:f.v.stringValue,s:+f.s.integerValue,c:+f.c.integerValue,t:+f.t.integerValue}});
+}
+const $=id=>document.getElementById(id);
+const IDS=["home","lg","ad","mk","sh","jn","pl","rs","db"];
+const show=id=>IDS.forEach(x=>$(x).classList.toggle("hide",x!==id));
+const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+const dec=s=>JSON.parse(decodeURIComponent(escape(atob(s))));
+const base=()=>location.href.split("#")[0];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ls=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||d)}catch(e){return JSON.parse(d)}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const addRes=r=>{const a=ls("aq_res","[]").filter(x=>x.id!==r.id);a.push(r);sv("aq_res",a)};
+const localBoard=q=>ls("aq_res","[]").filter(x=>x.q===q);
+(function(){const b=$("bubbles"),T=["+","−","×","÷","=","%","√","π","∑","∞","x²","n!","Δ","≈","≠","≥","∫","2+2=4","7×8=56","12²=144","√81=9","3x+5=20","15% of 200","a²+b²=c²","speed = d/t","SI = PRT/100","A : B = 3 : 2","HCF · LCM","sin²θ+cos²θ=1","nCr = n!/r!(n−r)!","log 10 = 1","1, 4, 9, 16, ?","25% = 1/4","(a+b)² = a²+2ab+b²","Profit % = P/CP×100","5! = 120"];for(let i=0;i<28;i++){const s=document.createElement("span");s.textContent=T[Math.floor(Math.random()*T.length)];s.style.cssText="font-size:"+(15+Math.random()*24)+"px;left:"+Math.random()*92+"%;animation-duration:"+(14+Math.random()*18)+"s;animation-delay:-"+Math.random()*30+"s";b.appendChild(s)}})();
+const LET="ABCD",AV=["😎","🦊","🐼","🐯","🦄","🐙","🤖","👽"];
+let qs=[],meta=null,qid="",idx=0,pts=0,streak=0,corr=0,left=0,total=20,iv=null,locked=false,me={n:"",v:AV[0]},cur=null;
+
+function shareRow(el,url,text){
+ const u=encodeURIComponent(url),t=encodeURIComponent(text);
+ el.innerHTML=[["WhatsApp","https://wa.me/?text="+t+"%20"+u],["Facebook","https://www.facebook.com/sharer/sharer.php?u="+u],["Telegram","https://t.me/share/url?url="+u+"&text="+t],["X","https://twitter.com/intent/tweet?text="+t+"&url="+u],["Email","mailto:?subject="+t+"&body="+u]].map(x=>'<a target="_blank" rel="noopener" href="'+x[1]+'">'+x[0]+'</a>').join("");
+ const c=document.createElement("button");c.className="pri";c.textContent="Copy link";
+ c.onclick=async()=>{
+  let ok=false;
+  try{await navigator.clipboard.writeText(url);ok=true}catch(e){}
+  if(!ok){const t=document.createElement("textarea");t.value=url;t.setAttribute("readonly","");t.style.cssText="position:fixed;top:0;left:0;opacity:0;font-size:16px";document.body.appendChild(t);t.focus();t.select();t.setSelectionRange(0,url.length);try{ok=document.execCommand("copy")}catch(e){}t.remove()}
+  if(ok){c.textContent="Copied"}else{window.prompt("Copy this link:",url);c.textContent="Copy link"}
+  if(ok)setTimeout(()=>{c.textContent="Copy link"},2000);
+ };el.appendChild(c);
+ if(navigator.share){const n=document.createElement("button");n.textContent="More options";n.onclick=()=>navigator.share({title:text,text:text,url:url}).catch(()=>{});el.appendChild(n)}
+}
+function board(el,a,title){
+ const tot={};a.forEach(r=>{const k=String(r.n).trim().toLowerCase()+"|"+(r.d||"")+"|"+(r.y||"");if(!tot[k])tot[k]=Object.assign({},r);else{tot[k].s+=r.s;tot[k].c+=r.c;tot[k].t+=r.t}});a=Object.values(tot);
+ a.sort((x,y)=>y.s-x.s||y.c-x.c);
+ if(!a.length){el.innerHTML=title?"":'<p class="sub">No players yet. Share your quiz link.</p>';return}
+ const acc=r=>Math.round(r.c/r.t*100),av=r=>'<i class="av">'+esc(r.v||"🙂")+'</i>';
+ let h=title?'<h2 style="margin-top:14px">'+title+'</h2>':"";
+ if(!title){
+  h+='<div class="stats"><div><b>'+a.length+'</b><span>Players</span></div><div><b>'+Math.round(a.reduce((m,r)=>m+acc(r),0)/a.length)+'%</b><span>Avg accuracy</span></div><div><b>'+a[0].s+'</b><span>Top score</span></div></div><div class="podium">';
+  [1,0,2].forEach(k=>{const r=a[k];if(!r)return;h+='<div class="pod"><span>'+["1st","2nd","3rd"][k]+'</span>'+av(r)+'<em>'+esc(r.n)+'</em><div class="step" style="height:'+[96,74,54][k]+'px;opacity:'+[1,.8,.6][k]+'">'+r.s+'</div></div>'});
+  h+='</div>';
+ }
+ el.innerHTML=h+a.map((r,k)=>'<div class="row"><span class="rk">'+(k+1)+'</span>'+av(r)+'<span class="nm"><b>'+esc(r.n)+(r.d?'<small>'+esc(r.d)+(r.y?' · '+esc(r.y):'')+'</small>':'')+'</b><span class="mb"><i style="width:'+acc(r)+'%"></i></span></span><span class="p">'+r.s+' pts</span></div>').join("");
+}
+let dbIv=null;
+async function refreshDb(){
+ let a=ls("aq_res","[]");
+ if(online()){a=[];try{for(const id of ls("aq_my","[]"))a=a.concat(await loadResults(id))}catch(e){}}
+ board($("list"),a);
+}
+async function dashboard(){if(!adm){show("lg");return}show("db");clearInterval(dbIv);await refreshDb();if(online())dbIv=setInterval(refreshDb,4000)}
+// ---------- create ----------
+function resetForm(){$("mq").value="";document.querySelectorAll(".mi").forEach(x=>x.value="");const c=document.querySelector("input[name=ma]:checked");if(c)c.checked=false}
+function chips(){$("mls").innerHTML=qs.map((q,k)=>'<span>'+(k+1)+'. '+esc(q.q.slice(0,22))+'<b data-k="'+k+'" role="button" aria-label="Delete question">×</b></span>').join("");
+ document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{qs.splice(+b.dataset.k,1);chips()});$("mpub").disabled=!qs.length}
+for(let k=0;k<4;k++){const d=document.createElement("div");d.className="cr";d.innerHTML='<input type="radio" name="ma" value="'+k+'" aria-label="Correct answer '+(k+1)+'"><input class="mi" placeholder="Option '+(k+1)+(k>1?" (optional)":"")+'" maxlength="40" aria-label="Option '+(k+1)+'">';$("mo").appendChild(d)}
+$("hmk").onclick=()=>{qs=[];chips();resetForm();$("mm").textContent="";show("mk")};
+$("madd").onclick=()=>{
+ const q=$("mq").value.trim(),ins=[...document.querySelectorAll(".mi")].map(x=>x.value.trim()),ch=document.querySelector("input[name=ma]:checked");
+ if(!q||ins.filter(Boolean).length<2||!ch||!ins[+ch.value]){$("mm").textContent="Add a question, at least 2 options, and select the circle of the correct answer.";return}
+ const o=[];let a=0;ins.forEach((v,k)=>{if(v){if(k===+ch.value)a=o.length;o.push(v)}});
+ qs.push({q:q,o:o,a:a});$("mm").textContent="";resetForm();chips();
+};
+$("mpub").onclick=async()=>{
+ const t=$("mt").value.trim()||"My Quiz",m={t:t,tm:+$("mtm").value,h:$("mh").value.replace(/\D/g,""),q:qs};
+ if(online()){
+  $("mpub").disabled=true;$("mpub").textContent="Creating...";
+  qid=gc();m.i=qid;
+  try{await createGame(qid,m)}catch(e){$("mm").textContent="Could not reach the server. Check your Firebase setup.";$("mpub").disabled=false;$("mpub").textContent="Publish quiz";return}
+  $("mpub").textContent="Publish quiz";$("mpub").disabled=false;
+  const url=base()+"#j="+qid;sv("aq_my",ls("aq_my","[]").concat(qid));
+  $("jc").textContent=qid;$("jcw").hidden=false;$("lnk").value=url;$("cd").value=qid;
+  shareRow($("shr"),url,"Join my quiz "+t+" with code "+qid);show("sh");return;
+ }
+ qid=Math.random().toString(36).slice(2,8);m.i=qid;
+ const code=enc(m),url=base()+"#q="+code;sv("aq_my",ls("aq_my","[]").concat(qid));
+ $("jcw").hidden=true;$("lnk").value=url;$("cd").value=code;shareRow($("shr"),url,"Join my quiz: "+t);show("sh");
+};
+["lnk","cd"].forEach(i=>$(i).onclick=e=>{e.target.select();e.target.setSelectionRange(0,e.target.value.length)});
+$("mbk").onclick=()=>show("ad");$("sbk").onclick=()=>show("ad");$("gd").onclick=dashboard;$("hdb").onclick=dashboard;$("rf").onclick=dashboard;$("bk").onclick=()=>{clearInterval(dbIv);show("ad")};
+// ---------- join ----------
+function openQuiz(c){
+ try{meta=dec(c.trim().split("#").pop().replace(/^q=/,""));if(!meta.q||!meta.q.length)throw 0}
+ catch(e){$("code").value="";$("code").placeholder="That did not work. Try again";return}
+ setMeta();
+}
+function setMeta(){
+ qs=meta.q;total=meta.tm||20;
+ $("jt").textContent=meta.t;$("js").textContent=qs.length+" questions · "+total+" seconds each. Faster answers earn more points.";
+ show("jn");
+}
+$("avs").innerHTML=AV.map((e,k)=>'<button type="button" class="'+(k?"":"on")+'" aria-label="Avatar '+e+'">'+e+'</button>').join("");
+[...$("avs").children].forEach((b,k)=>b.onclick=()=>{[...$("avs").children].forEach(x=>x.classList.remove("on"));b.classList.add("on");me.v=AV[k];$("jav").textContent=AV[k]});
+async function joinCode(c){const g=await getGame(c).catch(()=>null);if(!g){$("code").value="";$("code").placeholder="Code not found. Check and try again";return}meta=g;setMeta()}
+$("hjn").onclick=()=>{const v=$("code").value.trim();/^[A-Za-z0-9]{6}$/.test(v)&&online()?joinCode(v.toUpperCase()):openQuiz(v)};
+$("jgo").onclick=()=>{const n=$("jname").value.trim();if(!n){$("jname").focus();$("jname").placeholder="Please type your name first";return}if(!$("jg").value){$("jg").focus();return}if(!$("jy").value){$("jy").focus();return}me.n=n;me.d=$("jg").value;me.y=$("jy").value;me.id=Math.random().toString(36).slice(2,9);idx=0;pts=0;streak=0;corr=0;$("psc").textContent="0";$("pn").textContent=me.v+" "+n;show("pl");askQ()};
+// ---------- play ----------
+function askQ(){
+ locked=false;cur=qs[idx];$("qt").textContent=cur.q;$("fb").textContent="";$("mini").innerHTML="";$("nx").hidden=true;
+ $("pst").textContent="Question "+(idx+1)+" of "+qs.length+(streak>1?" · Streak "+streak:"");
+ $("ans").innerHTML="";
+ cur.o.forEach((t,k)=>{const b=document.createElement("button");b.className="ans";b.innerHTML="<i>"+LET[k]+"</i><span></span>";b.lastChild.textContent=t;b.onclick=()=>answer(k);$("ans").appendChild(b)});
+ const t0=Date.now();left=total;clearInterval(iv);
+ iv=setInterval(()=>{left=total-(Date.now()-t0)/1000;$("tbar").style.width=Math.max(left/total*100,0)+"%";if(left<=0)answer(-1)},100);
+}
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function answer(k){
+ if(locked)return;locked=true;clearInterval(iv);
+ const ok=k===cur.a,bs=[...$("ans").children];
+ bs.forEach((b,n)=>{b.disabled=true;if(n===cur.a)b.classList.add("ok");else if(n===k)b.classList.add("no");else b.classList.add("dim")});
+ if(ok){streak++;corr++;const g=600+Math.round(400*Math.max(left,0)/total)+Math.min(streak-1,5)*50;pts+=g;$("fb").style.color="var(--good)";$("fb").textContent="Correct  +"+g+"  "+pick(["Well done.","Great work.","Nicely answered.","Keep it up."])}
+ else{streak=0;$("fb").style.color="var(--bad)";$("fb").textContent=k<0?"Time is up.":pick(["Not quite.","Incorrect.","Better luck on the next one."])}
+ if(online())saveResult({id:meta.i+"_"+me.id,q:meta.i,n:me.n,d:me.d,y:me.y,v:me.v,s:pts,c:corr,t:idx+1}).catch(()=>{});
+ $("psc").textContent=pts;$("nx").textContent=idx===qs.length-1?"See results":"Next";$("nx").hidden=false;
+}
+$("nx").onclick=()=>{idx++;idx<qs.length?askQ():finish()};
+function finish(){
+ const t=qs.length,ac=corr/t;
+ const r=ac===1?["Perfect score","Flawless. Every answer was correct."]:ac>=.8?["Excellent","Superb result. You are a true quiz star."]:ac>=.6?["Well done","Nice work. A little more practice and you will top the board."]:ac>=.4?["Good effort","Not bad. Keep playing to climb the leaderboard."]:["Keep going","Every expert starts somewhere. Try again."];
+ $("rm").textContent=me.v;$("rsc").textContent=pts+" pts";$("rv").textContent=r[0];
+ $("rt").textContent=me.n+", "+r[1]+" ("+corr+"/"+t+" correct)";
+ const res={id:meta.i+"_"+me.id,q:meta.i,n:me.n,d:me.d,y:me.y,v:me.v,s:pts,c:corr,t:t},link=base()+"#r="+enc(res);
+ $("sendres").href="https://wa.me/"+(meta.h||"")+"?text="+encodeURIComponent(me.n+" scored "+pts+" pts ("+corr+"/"+t+") on "+meta.t+". See the leaderboard: "+link);
+ $("shr2").innerHTML="";
+ $("sendres").hidden=online();show("rs");
+ if(online())saveResult(res).catch(()=>addRes(res));else addRes(res);
+}
+$("again").onclick=()=>{history.replaceState(null,"",base());$("code").value="";$("jname").value="";$("jg").value="";$("jy").value="";show("home")};
+// ---------- admin ----------
+$("hadm").onclick=()=>adm?show("ad"):show("lg");
+function doLogin(){
+ if($("lgp").value===ADMIN_PASS){adm=true;try{sessionStorage.setItem("aq_adm","1")}catch(e){}$("lgp").value="";$("lgm").textContent="";
+  if(pendingR){addRes(pendingR);pendingR=null;dashboard()}else show("ad")}
+ else $("lgm").textContent="Wrong password. Try again.";
+}
+$("lgo").onclick=doLogin;$("lgp").onkeydown=e=>{if(e.key==="Enter")doLogin()};
+$("lgb").onclick=()=>{pendingR=null;$("lgm").textContent="";show("home")};
+$("lo").onclick=()=>{adm=false;try{sessionStorage.removeItem("aq_adm")}catch(e){}show("home")};
+const h=location.hash.slice(1);
+if(h.startsWith("j=")&&online())joinCode(h.slice(2).toUpperCase());
+else if(h.startsWith("q="))openQuiz(h);
+else if(h.startsWith("r=")){try{const r=dec(h.slice(2));if(adm){addRes(r);dashboard()}else{pendingR=r;$("lgm").textContent="Admin login required to view scores.";show("lg")}}catch(e){}}
+else if(adm)show("ad");
+</script>
+</body>
+</html>
